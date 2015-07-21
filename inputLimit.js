@@ -6,7 +6,6 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
   InputLimit = (function() {
     InputLimit.prototype.defaults = {
       limit: 2,
-      step: 50,
       regexp: '[0-9,]+(\.[0-9][0-9]?)?',
       onInit: function() {},
       onDestroy: function() {}
