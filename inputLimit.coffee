@@ -5,7 +5,6 @@ do($ = window.jQuery, window) ->
 
     defaults:
       limit: 2
-      step: 50
       regexp: '[0-9,]+(\.[0-9][0-9]?)?'
       onInit: ->
       onDestroy: ->
