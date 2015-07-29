@@ -1,5 +1,3 @@
-# TODO: Dynamically create the regex
-
 do($ = window.jQuery, window) ->
 
   # Define the plugin class
