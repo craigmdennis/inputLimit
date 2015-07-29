@@ -5,8 +5,8 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
   var InputLimit;
   InputLimit = (function() {
     InputLimit.prototype.defaults = {
-      limit: 2,
-      regexp: '[0-9,]+(\.[0-9][0-9]?)?',
+      numberLimit: false,
+      decimalLimit: false,
       onInit: function() {},
       onDestroy: function() {}
     };
@@ -15,12 +15,12 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       this.destroy = bind(this.destroy, this);
       this.process = bind(this.process, this);
       this.extractNumbers = bind(this.extractNumbers, this);
-      this.hasDecimalCorrect = bind(this.hasDecimalCorrect, this);
-      this.limitValue = bind(this.limitValue, this);
       this.setVal = bind(this.setVal, this);
       this.getVal = bind(this.getVal, this);
       this.options = $.extend({}, this.defaults, options);
       this.$el = $(el);
+      this.decimalLimit = this.$el.attr('data-limitdecimal') || this.options.decimalLimit;
+      this.numberLimit = this.$el.attr('data-limitnumber') || this.options.numberLimit;
       this.bind();
       this.options.onInit(this.$el, this.getVal());
     }
@@ -41,29 +41,32 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       return this.$el.val(value);
     };
 
-    InputLimit.prototype.limitValue = function() {
-      var int;
-      int = this.val.replace(',', '');
-      this.setVal(parseInt(int).toFixed(this.options.limit));
-      return this.$el.trigger('spinchange');
-    };
-
-    InputLimit.prototype.hasDecimalCorrect = function() {
-      var curPos, expPos;
-      curPos = this.val.lastIndexOf('.');
-      expPos = this.val.length - 3;
-      if ((curPos === expPos) && (curPos > 0)) {
-        return true;
-      } else {
-        return false;
+    InputLimit.prototype.buildRegex = function() {
+      var allowedChars, decLimit, numLimit, regex;
+      allowedChars = '';
+      this.allowedDecimals = 0;
+      if (this.allowedChars) {
+        allowedChars = this.allowedChars;
       }
+      numLimit = '[0-9' + allowedChars + ']';
+      decLimit = '';
+      if (this.numberLimit) {
+        numLimit += '{1,' + this.numberLimit + '}';
+      } else {
+        numLimit += '+';
+      }
+      if (this.decimalLimit) {
+        decLimit = '(\\.[0-9]{1,' + this.decimalLimit + '})?';
+        this.allowedDecimals = 1;
+      }
+      regex = new RegExp(numLimit + decLimit);
+      console.log(regex);
+      return regex;
     };
 
     InputLimit.prototype.extractNumbers = function() {
-      var regexp;
       if (this.val !== null) {
-        regexp = this.options.regexp;
-        return this.val.match(regexp);
+        return this.val.match(this.buildRegex());
       }
     };
 
@@ -73,13 +76,14 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       extr = this.extractNumbers();
       if (extr) {
         num = extr[0];
-        console.log('Current Value', this.val);
-        console.log('Extracted Numbers', num);
-        if ((this.val !== num) && (this.val !== num + '.')) {
-          this.setVal(num);
-          return this.limitValue();
+        if (((this.val !== num) && (this.val !== num + '.')) || (this.occurrances(this.val) > this.allowedDecimals)) {
+          return this.setVal(num);
         }
       }
+    };
+
+    InputLimit.prototype.occurrances = function(haystack) {
+      return (haystack.match(/\./g) || []).length;
     };
 
     InputLimit.prototype.destroy = function() {
