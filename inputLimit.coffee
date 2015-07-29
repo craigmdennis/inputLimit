@@ -1,11 +1,13 @@
+# TODO: Dynamically create the regex
+
 do($ = window.jQuery, window) ->
 
   # Define the plugin class
   class InputLimit
 
     defaults:
-      limit: 2
-      regexp: '[0-9,]+(\.[0-9][0-9]?)?'
+      numberLimit: false
+      decimalLimit: false
       onInit: ->
       onDestroy: ->
 
@@ -13,6 +15,10 @@ do($ = window.jQuery, window) ->
     constructor: (el, options) ->
       @options = $.extend({}, @defaults, options)
       @$el = $(el)
+      
+      @decimalLimit = @$el.attr('data-limitdecimal') || @options.decimalLimit
+      @numberLimit = @$el.attr('data-limitnumber') || @options.numberLimit
+      
       @bind()
       @options.onInit( @$el, @getVal() )
 
@@ -28,59 +34,62 @@ do($ = window.jQuery, window) ->
 
     setVal: (value) =>
       @$el.val( value )
+      
+    # Build the regex from options
+    buildRegex: ->      
+      allowedChars = ''
+      @allowedDecimals = 0
+      
+      if @allowedChars
+        allowedChars = @allowedChars
+        
+      numLimit = '[0-9' + allowedChars + ']'
+      decLimit = ''
+        
+      if @numberLimit
+        numLimit += '{1,' + @numberLimit + '}'
+      else 
+        numLimit += '+'
 
-    limitValue: =>
-      # Remove comas from the value
-      int = @val.replace(',', '')
+      if @decimalLimit
+        decLimit = '(\\.[0-9]{1,' + @decimalLimit + '})?'
+        @allowedDecimals = 1
 
-      # Return a 2 decimal place value and prefix the symbol
-      @setVal( parseInt( int ).toFixed( @options.limit ) )
+      regex = new RegExp numLimit + decLimit
+      console.log regex
 
-      # Tell any spinners attached that the value needs parsing again
-      # We don't use `@$el.spinner('value', @val )`
-      # because we can't be sure there is one attached or that it's even included
-      @$el.trigger('spinchange')
-
-    hasDecimalCorrect: =>
-      curPos = @val.lastIndexOf( '.' )
-      expPos = @val.length - 3
-
-      # console.log 'Current Decimal Position:', @val.lastIndexOf( '.' )
-      # console.log 'Expected Decimal Position:', @val.length - 3
-
-      if (curPos == expPos) && (curPos > 0)
-        return true
-      else
-        return false
+      return regex
 
     extractNumbers: =>
       if @val != null
-        regexp = @options.regexp
-        return @val.match(regexp)
+        return @val.match( @buildRegex() )
 
     process: =>
       # Set the current value so we can access it anywhere
       # without having to read it all the time
       @getVal()
       extr = @extractNumbers()
+      
+      # If there are captured numbers
       if extr
         num = extr[0]
 
-        console.log 'Current Value', @val
-        console.log 'Extracted Numbers', num
-
-        # Check to make sure the value is different to the regex
-        # before we make any changes as the caret will move
-        # to the end of the input
-        if (@val != num) && (@val != num + '.')
+        # Only update the value if
+        # - the capture is different to the value 
+        # - AND there is no '.' present after the capture
+        # - OR there is no more than one '.' present
+        if ((@val != num) && (@val != num + '.')) || ( @occurrances(@val) > @allowedDecimals)
           @setVal( num )
-          @limitValue()
+          
+    # Simple function to check how many times
+    # a decimal appears in a string
+    occurrances: (haystack) ->
+      return (haystack.match( /\./g ) || []).length
 
+    # Remove the function and handlers
     destroy: =>
       @unbind()
       @options.onDestroy( @$el, @getVal() )
-
-
 
   # Define the plugin
   $.fn.extend inputLimit: (option, args...) ->
