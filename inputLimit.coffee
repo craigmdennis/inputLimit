@@ -13,10 +13,10 @@ do($ = window.jQuery, window) ->
     constructor: (el, options) ->
       @options = $.extend({}, @defaults, options)
       @$el = $(el)
-      
+
       @decimalLimit = @$el.attr('data-limitdecimal') || @options.decimalLimit
       @numberLimit = @$el.attr('data-limitnumber') || @options.numberLimit
-      
+
       @bind()
       @options.onInit( @$el, @getVal() )
 
@@ -32,24 +32,25 @@ do($ = window.jQuery, window) ->
 
     setVal: (value) =>
       @$el.val( value )
-      
+
     # Build the regex from options
-    buildRegex: ->      
+    buildRegex: ->
       allowedChars = ''
       @allowedDecimals = 0
-      
+
       if @allowedChars
         allowedChars = @allowedChars
-        
+
       numLimit = '[0-9' + allowedChars + ']'
       decLimit = ''
-        
-      if @numberLimit
+
+      if @numberLimit && @numberLimit != 'false'
         numLimit += '{1,' + @numberLimit + '}'
-      else 
+      else
         numLimit += '+'
 
-      if @decimalLimit
+      if @decimalLimit && @decimalLimit != 'false'
+        console.log @decimalLimit
         decLimit = '(\\.[0-9]{1,' + @decimalLimit + '})?'
         @allowedDecimals = 1
 
@@ -67,18 +68,18 @@ do($ = window.jQuery, window) ->
       # without having to read it all the time
       @getVal()
       extr = @extractNumbers()
-      
+
       # If there are captured numbers
       if extr
         num = extr[0]
 
         # Only update the value if
-        # - the capture is different to the value 
+        # - the capture is different to the value
         # - AND there is no '.' present after the capture
         # - OR there is no more than one '.' present
         if ((@val != num) && (@val != num + '.')) || ( @occurrances(@val) > @allowedDecimals)
           @setVal( num )
-          
+
     # Simple function to check how many times
     # a decimal appears in a string
     occurrances: (haystack) ->
