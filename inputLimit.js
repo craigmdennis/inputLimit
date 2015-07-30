@@ -50,12 +50,13 @@ var bind = function(fn, me){ return function(){ return fn.apply(me, arguments); 
       }
       numLimit = '[0-9' + allowedChars + ']';
       decLimit = '';
-      if (this.numberLimit) {
+      if (this.numberLimit && this.numberLimit !== 'false') {
         numLimit += '{1,' + this.numberLimit + '}';
       } else {
         numLimit += '+';
       }
-      if (this.decimalLimit) {
+      if (this.decimalLimit && this.decimalLimit !== 'false') {
+        console.log(this.decimalLimit);
         decLimit = '(\\.[0-9]{1,' + this.decimalLimit + '})?';
         this.allowedDecimals = 1;
       }
