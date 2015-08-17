@@ -16,6 +16,7 @@ do($ = window.jQuery, window) ->
 
       @decimalLimit = @$el.attr('data-limitdecimal') || @options.decimalLimit
       @numberLimit = @$el.attr('data-limitnumber') || @options.numberLimit
+      @min = @$el.attr('min') || 1
 
       @bind()
       @options.onInit( @$el, @getVal() )
@@ -28,7 +29,7 @@ do($ = window.jQuery, window) ->
       @$el.off 'input propertychange'
 
     getVal: =>
-      @val = @$el.val()
+      @$el.val()
 
     setVal: (value) =>
       @$el.val( value )
@@ -59,15 +60,16 @@ do($ = window.jQuery, window) ->
 
       return regex
 
-    extractNumbers: =>
-      if @val != null
-        return @val.match( @buildRegex() )
+    extractNumbers: (val) =>
+      matched = val.match( @buildRegex() )
+      if matched != "" && matched != null
+        return matched
 
     process: =>
       # Set the current value so we can access it anywhere
       # without having to read it all the time
-      @getVal()
-      extr = @extractNumbers()
+      extr = @extractNumbers( @getVal() )
+      console.log extr
 
       # If there are captured numbers
       if extr
@@ -77,8 +79,13 @@ do($ = window.jQuery, window) ->
         # - the capture is different to the value
         # - AND there is no '.' present after the capture
         # - OR there is no more than one '.' present
-        if ((@val != num) && (@val != num + '.')) || ( @occurrances(@val) > @allowedDecimals)
+        val = @getVal()
+        if ((val != num) && (val != num + '.')) || ( @occurrances(val) > @allowedDecimals)
           @setVal( num )
+
+      # Assume the input is empty and so set the value if it doesn't match the regex
+      else
+        @setVal( "" )
 
     # Simple function to check how many times
     # a decimal appears in a string
